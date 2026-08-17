@@ -38,7 +38,7 @@ def filter_particles_outside_micrograph(particles_df, micrograph_size):
     return filtered_particles_df, deleted_count
 
 # Perform calculations
-def perform_calculations(particles_df, optics_df, delta_vector):
+def perform_calculations(particles_df, optics_df, delta_vector, apply_defocus_correction=True):
     # Create a dictionary to store pixel sizes for each optics group
     pixel_sizes = {}
 
@@ -65,13 +65,14 @@ def perform_calculations(particles_df, optics_df, delta_vector):
         new_vector = rot_vector * (ori_pix / microg_pix)
         new_x = row['rlnCoordinateX'] + float(new_vector[0])
         new_y = row['rlnCoordinateY'] + float(new_vector[1])
-        new_defocusU = row['rlnDefocusU'] + float(new_vector[2] * microg_pix)
-        new_defocusV = row['rlnDefocusV'] + float(new_vector[2] * microg_pix)
-
         particles_df.at[index, 'rlnCoordinateX'] = new_x
         particles_df.at[index, 'rlnCoordinateY'] = new_y
-        particles_df.at[index, 'rlnDefocusU'] = new_defocusU
-        particles_df.at[index, 'rlnDefocusV'] = new_defocusV
+
+        if apply_defocus_correction:
+            new_defocusU = row['rlnDefocusU'] + float(new_vector[2] * microg_pix)
+            new_defocusV = row['rlnDefocusV'] + float(new_vector[2] * microg_pix)
+            particles_df.at[index, 'rlnDefocusU'] = new_defocusU
+            particles_df.at[index, 'rlnDefocusV'] = new_defocusV
 
     return particles_df
 
@@ -117,8 +118,8 @@ def main():
     output_suffix = f".block{letter}.bbr.star"
 
     while True:
-        hand_option = input("Enter 1 to run with the current hand, 2 to invert hand, or 3 to run with both hands: ")
-        if hand_option in ['1', '2', '3']:
+        hand_option = input("Enter 1 to run with the current hand, 2 to invert hand, 3 to run with both hands, or 4 to run without defocus correction: ")
+        if hand_option in ['1', '2', '3', '4']:
             hand_option = int(hand_option)
             break
         else:
@@ -150,6 +151,14 @@ def main():
               f"{deleted_count} subparticles were deleted because they lie outside the micrograph.")
         df['particles'] = filtered_particles_df
         write_star_file(df, filename.with_suffix(output_suffix.replace(".star", ".hand1.star")))
+
+    if hand_option == 4:
+        particles_df = perform_calculations(particles_df, optics_df, delta_vector, apply_defocus_correction=False)
+        filtered_particles_df, deleted_count = filter_particles_outside_micrograph(particles_df, micrograph_size)
+        print(f"For outputted data file {filename.with_suffix(output_suffix.replace('.star', '.hand1_no_defocus.star'))}, "
+              f"{deleted_count} subparticles were deleted because they lie outside the micrograph.")
+        df['particles'] = filtered_particles_df
+        write_star_file(df, filename.with_suffix(output_suffix.replace(".star", ".hand1_no_defocus.star")))
     
     # Print inputs to a log file
     print_log_file(filename, delta_vector, letter, hand_option, micrograph_size)
@@ -157,4 +166,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

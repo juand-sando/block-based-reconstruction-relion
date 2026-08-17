@@ -36,7 +36,7 @@ The script will prompt for:
 
 - delta vector `X Y Z` in particle pixels
 - block name
-- hand option
+- hand/correction option
 - micrograph size
 
 ## What The Script Changes
@@ -45,8 +45,15 @@ For each particle, the script:
 
 - rotates the input delta vector using the particle Euler angles
 - shifts `rlnCoordinateX` and `rlnCoordinateY`
-- updates `rlnDefocusU` and `rlnDefocusV` based on the rotated Z component
+- updates `rlnDefocusU` and `rlnDefocusV` based on the rotated Z component, unless option 4 is selected
 - filters out shifted particles that move outside the micrograph
+
+The hand/correction options are:
+
+- `1`: current hand with defocus correction
+- `2`: inverted hand with defocus correction
+- `3`: both hands with defocus correction
+- `4`: current hand without defocus correction; coordinates are still shifted and particles outside the micrograph are still removed
 
 ## Output
 
@@ -54,6 +61,7 @@ Depending on the hand option, the script writes one or both of:
 
 - `particles.block<LETTER>.bbr.hand1.star`
 - `particles.block<LETTER>.bbr.hand2.star`
+- `particles.block<LETTER>.bbr.hand1_no_defocus.star`
 
 It also writes:
 
